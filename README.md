@@ -44,14 +44,14 @@ http://localhost:5000
 ---
 
 ## ☁️ Infrastructure (Terraform)
-terraform init
-terraform apply
+- terraform init
+- terraform apply
 
 ---
 
 ## 🎯 Key Learnings
-Infrastructure as Code (Terraform)
-Containerization (Docker)
-CI/CD automation (GitHub Actions)
-AWS EC2 provisioning & networking
-Debugging real cloud deployment issues (SSH, permissions, keys)
+- Infrastructure as Code (Terraform)
+- Containerization (Docker)
+- CI/CD automation (GitHub Actions)
+- AWS EC2 provisioning & networking
+- Debugging real cloud deployment issues (SSH, permissions, keys)

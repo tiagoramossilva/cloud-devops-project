@@ -39,7 +39,7 @@ docker build -t cloud-app .
 docker run -p 5001:5000 cloud-app
 
 Access the app:
-http://localhost:5000
+http://localhost:5001
 
 ---
 

@@ -112,3 +112,8 @@ output "instance_public_ip" {
 output "instance_public_dns" {
   value = aws_instance.app_server.public_dns
 }
+
+resource "aws_iam_role_policy_attachment" "ecr_access" {
+  role       = aws_iam_role.ec2_ssm_role.name
+  policy_arn = "arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly"
+}

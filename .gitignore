@@ -10,4 +10,6 @@ __pycache__/
 *.pyc
 
 # OS
-.DS_Store
+.DS_Store*.pem
+cloud-devops-key
+cloud-devops-key.pub

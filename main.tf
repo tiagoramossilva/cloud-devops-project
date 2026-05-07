@@ -1,25 +1,23 @@
+# -------------------------
+# PROVIDER
+# -------------------------
 provider "aws" {
   region = "eu-central-1"
 }
 
 # -------------------------
-# VPC default
+# DATA SOURCES
 # -------------------------
 data "aws_vpc" "default" {
   default = true
 }
 
-# -------------------------
-# Subnets default
-# -------------------------
 data "aws_subnets" "default" {
   filter {
     name   = "vpc-id"
     values = [data.aws_vpc.default.id]
   }
 }
-
-
 
 # -------------------------
 # SECURITY GROUP
@@ -35,13 +33,6 @@ resource "aws_security_group" "app_sg" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 
-  ingress {
-    from_port   = 22
-    to_port     = 22
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
   egress {
     from_port   = 0
     to_port     = 0
@@ -50,12 +41,34 @@ resource "aws_security_group" "app_sg" {
   }
 }
 
-variable "key_name" {
-  default = "cloud-devops-key"
+# -------------------------
+# IAM (SSM)
+# -------------------------
+resource "aws_iam_role" "ec2_ssm_role" {
+  name = "ec2-ssm-role"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17",
+    Statement = [{
+      Effect    = "Allow",
+      Principal = { Service = "ec2.amazonaws.com" },
+      Action    = "sts:AssumeRole"
+    }]
+  })
+}
+
+resource "aws_iam_role_policy_attachment" "ssm_attach" {
+  role       = aws_iam_role.ec2_ssm_role.name
+  policy_arn = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
+}
+
+resource "aws_iam_instance_profile" "ec2_profile" {
+  name = "ec2-ssm-profile"
+  role = aws_iam_role.ec2_ssm_role.name
 }
 
 # -------------------------
-# EC2 INSTANCE
+# EC2
 # -------------------------
 resource "aws_instance" "app_server" {
   ami           = "ami-051eaec1417c5d4ae"
@@ -64,21 +77,24 @@ resource "aws_instance" "app_server" {
   subnet_id              = data.aws_subnets.default.ids[0]
   vpc_security_group_ids = [aws_security_group.app_sg.id]
 
-  key_name = var.key_name
+  iam_instance_profile = aws_iam_instance_profile.ec2_profile.name
 
   user_data = <<EOF
 #!/bin/bash
 apt update -y
-apt install -y docker.io git
+apt install -y docker.io git amazon-ssm-agent
 
-systemctl start docker
 systemctl enable docker
+systemctl start docker
 
-git clone https://github.com/tiagoramossilva/cloud-devops-project app
+systemctl enable amazon-ssm-agent
+systemctl start amazon-ssm-agent
+
+git clone https://github.com/tiagoramossilva/cloud-devops-project app || true
 cd app
 
 docker build -t flask-app .
-docker run -d -p 5000:5000 flask-app
+docker run -d -p 5000:5000 flask-app || true
 EOF
 
   tags = {

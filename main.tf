@@ -2,51 +2,29 @@ provider "aws" {
   region = "eu-central-1"
 }
 
-resource "aws_key_pair" "deployer" {
-  key_name   = "cloud-devops-key"
-  public_key = file("${path.module}/cloud-devops-key.pub")
+# -------------------------
+# VPC default (seguro e simples)
+# -------------------------
+data "aws_vpc" "default" {
+  default = true
 }
 
 # -------------------------
-# VPC (rede principal)
+# Subnet default
 # -------------------------
-resource "aws_vpc" "main" {
-  cidr_block = "10.0.0.0/16"
-}
-
-# -------------------------
-# Internet Gateway
-# -------------------------
-resource "aws_internet_gateway" "igw" {
-  vpc_id = aws_vpc.main.id
-}
-
-# -------------------------
-# Subnet pública
-# -------------------------
-resource "aws_subnet" "public" {
-  vpc_id                  = aws_vpc.main.id
-  cidr_block              = "10.0.1.0/24"
-  map_public_ip_on_launch = true
-  availability_zone      = "eu-central-1b"
-}
-
-# -------------------------
-# Route Table (acesso internet)
-# -------------------------
-resource "aws_route_table" "public_rt" {
-  vpc_id = aws_vpc.main.id
-
-  route {
-    cidr_block = "0.0.0.0/0"
-    gateway_id = aws_internet_gateway.igw.id
+data "aws_subnets" "default" {
+  filter {
+    name   = "vpc-id"
+    values = [data.aws_vpc.default.id]
   }
 }
 
-# Associação da subnet com internet
-resource "aws_route_table_association" "public_assoc" {
-  subnet_id      = aws_subnet.public.id
-  route_table_id = aws_route_table.public_rt.id
+# -------------------------
+# Key Pair (cria a chave corretamente)
+# -------------------------
+resource "aws_key_pair" "deployer" {
+  key_name   = "cloud-devops-key"
+  public_key = file("~/.ssh/id_rsa.pub")
 }
 
 # -------------------------
@@ -54,7 +32,7 @@ resource "aws_route_table_association" "public_assoc" {
 # -------------------------
 resource "aws_security_group" "app_sg" {
   name   = "app-security-group"
-  vpc_id = aws_vpc.main.id
+  vpc_id = data.aws_vpc.default.id
 
   ingress {
     from_port   = 5000
@@ -81,22 +59,37 @@ resource "aws_security_group" "app_sg" {
 # -------------------------
 # EC2 Instance
 # -------------------------
-
 resource "aws_instance" "app_server" {
   ami           = "ami-051eaec1417c5d4ae"
   instance_type = "t3.micro"
 
-  subnet_id = aws_subnet.public.id
-
-  key_name = "cloud-devops-key"
-
+  subnet_id              = data.aws_subnets.default.ids[0]
   vpc_security_group_ids = [aws_security_group.app_sg.id]
+  key_name               = aws_key_pair.deployer.key_name
+
+  user_data = <<EOF
+#!/bin/bash
+apt update -y
+apt install -y docker.io git
+
+systemctl start docker
+systemctl enable docker
+
+git clone https://github.com/tiagoramossilva/cloud-devops-project app
+cd app
+
+docker build -t flask-app .
+docker run -d -p 5000:5000 flask-app
+EOF
 
   tags = {
     Name = "cloud-devops-project"
   }
 }
 
+# -------------------------
+# Outputs
+# -------------------------
 output "instance_public_ip" {
   value = aws_instance.app_server.public_ip
 }

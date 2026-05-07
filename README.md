@@ -36,10 +36,10 @@ Hands-on DevOps project simulating a real-world cloud deployment pipeline using 
 ## 🚀 Run Locally
 
 docker build -t cloud-app .
-docker run -p 5001:5000 cloud-app
+docker run -p 5000:5000 cloud-app
 
 Access the app:
-http://localhost:5001
+http://localhost:5000
 
 ---
 

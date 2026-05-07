@@ -20,18 +20,17 @@ data "aws_subnets" "default" {
 }
 
 # -------------------------
-# Key Pair (cria a chave corretamente)
+# Key Pair (USA EXISTENTE - EVITA DUPLICAÇÃO)
 # -------------------------
-resource "aws_key_pair" "deployer" {
-  key_name   = "cloud-devops-key"
-  public_key = file("~/.ssh/id_rsa.pub")
+variable "key_name" {
+  default = "cloud-devops-key"
 }
 
 # -------------------------
-# Security Group
+# Security Group (NOME ÚNICO PARA EVITAR CONFLITO)
 # -------------------------
 resource "aws_security_group" "app_sg" {
-  name   = "app-security-group"
+  name   = "cloud-devops-app-sg"
   vpc_id = data.aws_vpc.default.id
 
   ingress {
@@ -65,7 +64,9 @@ resource "aws_instance" "app_server" {
 
   subnet_id              = data.aws_subnets.default.ids[0]
   vpc_security_group_ids = [aws_security_group.app_sg.id]
-  key_name               = aws_key_pair.deployer.key_name
+
+  # usa key já existente na AWS
+  key_name = var.key_name
 
   user_data = <<EOF
 #!/bin/bash

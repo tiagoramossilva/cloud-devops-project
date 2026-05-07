@@ -65,16 +65,10 @@ EC2 pulls latest container
 docker build -t cloud-app .
 ```
 
-### Run container
-
-```bash
-docker run -p 5000:5000 cloud-app
-```
-
 Application available at:
 
 ```bash
-http://localhost:5000
+http://localhost:5001
 ```
 
 ---

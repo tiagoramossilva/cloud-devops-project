@@ -55,3 +55,5 @@ http://localhost:5001
 - CI/CD automation (GitHub Actions)
 - AWS EC2 provisioning & networking
 - Debugging real cloud deployment issues (SSH, permissions, keys)
+
+CI/CD test working

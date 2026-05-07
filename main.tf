@@ -3,14 +3,14 @@ provider "aws" {
 }
 
 # -------------------------
-# VPC default (seguro e simples)
+# VPC default
 # -------------------------
 data "aws_vpc" "default" {
   default = true
 }
 
 # -------------------------
-# Subnet default
+# Subnets default
 # -------------------------
 data "aws_subnets" "default" {
   filter {
@@ -19,15 +19,10 @@ data "aws_subnets" "default" {
   }
 }
 
-# -------------------------
-# Key Pair (USA EXISTENTE - EVITA DUPLICAÇÃO)
-# -------------------------
-variable "key_name" {
-  default = "cloud-devops-key"
-}
+
 
 # -------------------------
-# Security Group (NOME ÚNICO PARA EVITAR CONFLITO)
+# SECURITY GROUP
 # -------------------------
 resource "aws_security_group" "app_sg" {
   name   = "cloud-devops-app-sg"
@@ -55,8 +50,12 @@ resource "aws_security_group" "app_sg" {
   }
 }
 
+variable "key_name" {
+  default = "cloud-devops-key"
+}
+
 # -------------------------
-# EC2 Instance
+# EC2 INSTANCE
 # -------------------------
 resource "aws_instance" "app_server" {
   ami           = "ami-051eaec1417c5d4ae"
@@ -65,7 +64,6 @@ resource "aws_instance" "app_server" {
   subnet_id              = data.aws_subnets.default.ids[0]
   vpc_security_group_ids = [aws_security_group.app_sg.id]
 
-  # usa key já existente na AWS
   key_name = var.key_name
 
   user_data = <<EOF
@@ -89,7 +87,7 @@ EOF
 }
 
 # -------------------------
-# Outputs
+# OUTPUTS
 # -------------------------
 output "instance_public_ip" {
   value = aws_instance.app_server.public_ip
